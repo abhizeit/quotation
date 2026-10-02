@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum QuoteStatus {
+  NEW
+  CONTACTED
+  WON
+  LOST
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model SiteSettings {
+  id              String   @id @default("default")
+  brandName       String
+  brandTag        String
+  phone           String
+  whatsapp        String
+  email           String
+  instagram       String
+  website         String   @default("")
+  logoUrl         String   @default("/brand-logo.png")
+  copy            Json
+  theme           Json
+  videoMinSec     Int
+  videoMaxSec     Int
+  durDiscMinSec   Int
+  durDiscPct      Float
+  qtyDiscAbove    Int
+  qtyDiscMinSec   Int
+  qtyDiscPct      Float
+  stackDiscounts  Boolean  @default(true)
+  bundleMin       Int
+  bundlePct       Float
+  gstRate         Float
+  validDays       Int
+  updatedAt       DateTime @updatedAt
+}
+
+model VideoStyle {
+  id          String  @id @default(cuid())
+  name        String
+  icon        String
+  multiplier  Float   @default(1)
+  description String
+  sort        Int
+  active      Boolean @default(true)
+}
+
+model VideoResolution {
+  id       String  @id @default(cuid())
+  key      String  @unique
+  label    String
+  detail   String
+  rate     Float
+  editRate Float
+  sort     Int
+  active   Boolean @default(true)
+}
+
+model Service {
+  id          String        @id @default(cuid())
+  name        String
+  icon        String
+  description String
+  unit        String
+  qtyLabel    String
+  price       Float
+  moq         Int           @default(1)
+  tierOn      String        @default("qty")
+  active      Boolean       @default(true)
+  sort        Int
+  multLabel   String?
+  multDefault Int?
+  multMin     Int?
+  multMax     Int?
+  tiers       ServiceTier[]
+}
+
+model ServiceTier {
+  id        String  @id @default(cuid())
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  min       Float
+  pct       Float
+}
+
+model Promo {
+  id     String  @id @default(cuid())
+  code   String  @unique
+  pct    Float
+  active Boolean @default(true)
+}
+
+model Lead {
+  id         String      @id @default(cuid())
+  name       String
+  phone      String
+  email      String
+  company    String      @default("")
+  gst        String      @default("")
+  createdAt  DateTime    @default(now())
+  quotations Quotation[]
+}
+
+model Quotation {
+  id         String          @id @default(cuid())
+  publicId   String          @unique
+  leadId     String
+  lead       Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  promoCode  String          @default("")
+  gross      Float
+  itemDisc   Float
+  bundleDisc Float
+  promoDisc  Float
+  gst        Float
+  total      Float
+  saved      Float
+  status     QuoteStatus     @default(NEW)
+  snapshot   Json
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  lines      QuotationLine[]
+
+  @@index([leadId])
+}
+
+model QuotationLine {
+  id          String    @id @default(cuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  source      String
+  name        String
+  meta        String
+  gross       Float
+  pct         Float
+  discount    Float
+  net         Float
+  inputs      Json
+  sort        Int
+
+  @@index([quotationId])
+}
